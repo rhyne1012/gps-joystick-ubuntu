@@ -53,6 +53,9 @@ uv run gps-joystick-ubuntu --app
 
 # 僅啟動伺服器不自動開視窗
 uv run gps-joystick-ubuntu --no-browser
+
+# 或使用桌面捷徑啟動腳本（若 8765 埠已啟動則直接開啟瀏覽器頁面）
+./scripts/launch-gps-joystick.sh
 ```
 
 ### 命令列快速診斷與定位測試（`probe_iphone.py`）
