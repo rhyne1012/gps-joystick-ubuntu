@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GPS 搖桿 · Ubuntu iPhone 定位模擬</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <path d="M12 2L19 20L12 16L5 20L12 2Z" fill="currentColor" />
+          </svg>
+        </div>
+        <div>
+          <h1>GPS 搖桿</h1>
+          <p class="subtitle">Ubuntu iPhone 定位模擬（iOS 17+ / 27）</p>
+        </div>
+      </div>
+
+      <div class="status-pill" id="header-status-pill">
+        <span class="status-dot" id="header-status-dot"></span>
+        <span id="header-status-text">預覽模式</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="map-pane">
+        <div id="map"></div>
+
+        <div class="map-toolbar-top">
+          <div class="toolbar-group">
+            <button id="btn-pick-start" class="pill-btn" type="button">選擇起點</button>
+            <button id="btn-search-toggle" class="pill-btn" type="button">搜尋地點</button>
+            <select id="layer-select" class="pill-select" aria-label="地圖圖層">
+              <option value="dark">深色地圖</option>
+              <option value="osm">標準地圖</option>
+              <option value="satellite">衛星圖層</option>
+            </select>
+          </div>
+
+          <div class="toolbar-group">
+            <label class="toggle-chip">
+              <input id="chk-follow" type="checkbox" checked />
+              <span>跟隨位置</span>
+            </label>
+            <button id="btn-recenter" class="pill-btn" type="button" title="回到模擬位置">回到模擬位置</button>
+          </div>
+        </div>
+
+        <div id="search-popover" class="search-popover hidden">
+          <form id="search-form" class="search-input-row">
+            <input
+              id="search-input"
+              type="text"
+              placeholder="搜尋地址、地標或店家…"
+              autocomplete="off"
+            />
+            <button type="submit" class="accent-btn small">搜尋</button>
+            <button id="btn-search-close" type="button" class="ghost-btn small">關閉</button>
+          </form>
+          <div id="search-status" class="search-status"></div>
+          <ul id="search-results" class="search-results"></ul>
+          <div id="search-preview-bar" class="search-preview-bar hidden">
+            <div class="preview-meta">
+              <strong id="preview-name"></strong>
+              <span id="preview-address"></span>
+            </div>
+            <button id="btn-apply-preview" type="button" class="accent-btn small">設為起點</button>
+          </div>
+        </div>
+
+        <div id="pick-banner" class="pick-banner hidden">
+          點擊地圖任意位置即可設為新起點（按「取消選點」或右鍵可返回）
+        </div>
+
+        <div id="tile-warning" class="tile-warning hidden">
+          地圖圖磚載入受限，目前仍可使用座標與 USB 定位同步。
+        </div>
+
+        <div class="map-controls-bottom">
+          <div class="hud-card">
+            <div class="hud-row">
+              <span class="hud-label">座標</span>
+              <span id="hud-coords" class="hud-value">25.03396, 121.56447</span>
+            </div>
+            <div class="hud-row">
+              <span class="hud-label">航向 / 速度</span>
+              <span id="hud-motion" class="hud-value">0° · 0.0 km/h</span>
+            </div>
+            <div class="hud-row">
+              <span class="hud-label">距離</span>
+              <span id="hud-distance" class="hud-value">0 m</span>
+            </div>
+          </div>
+
+          <div class="zoom-stack">
+            <button id="btn-zoom-in" class="zoom-btn" type="button" aria-label="放大">+</button>
+            <button id="btn-zoom-out" class="zoom-btn" type="button" aria-label="縮小">−</button>
+            <button id="btn-clear-trail" class="zoom-btn text-btn" type="button" title="清除軌跡">清軌跡</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="card">
+          <div class="card-header">
+            <h2>方向搖桿</h2>
+            <span id="motion-badge" class="badge">等待方向</span>
+          </div>
+
+          <div class="joystick-row">
+            <div id="joystick-pad" class="joystick-pad" tabindex="0" aria-label="GPS 方向搖桿">
+              <span class="dir-label dir-n">N</span>
+              <span class="dir-label dir-e">E</span>
+              <span class="dir-label dir-s">S</span>
+              <span class="dir-label dir-w">W</span>
+              <div class="joystick-crosshair"></div>
+              <div id="joystick-knob" class="joystick-knob"></div>
+            </div>
+
+            <div class="motion-side">
+              <button id="btn-toggle-motion" class="accent-btn" type="button" disabled>
+                開始
+              </button>
+              <p class="hint">
+                拖曳搖桿或按方向鍵 / WASD 移動；放開會維持航向繼續前進。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>移動速度</h2>
+            <span id="speed-value" class="mono-val">5.0 km/h</span>
+          </div>
+
+          <input
+            id="speed-slider"
+            class="speed-slider"
+            type="range"
+            min="0"
+            max="120"
+            step="0.5"
+            value="5"
+          />
+
+          <div class="preset-row">
+            <button class="preset-btn active" data-speed="5" type="button">步行 5</button>
+            <button class="preset-btn" data-speed="18" type="button">單車 18</button>
+            <button class="preset-btn" data-speed="50" type="button">開車 50</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <h2>iPhone USB 同步</h2>
+            <span id="device-phase-badge" class="badge">未連線</span>
+          </div>
+
+          <div class="device-meta" id="device-meta">
+            <div>裝置：<strong id="device-label">尚未偵測</strong></div>
+            <div>配對 / 開發者模式：<span id="device-flags">—</span></div>
+          </div>
+
+          <div id="device-message" class="notice-box hidden"></div>
+
+          <div class="btn-grid">
+            <button id="btn-inspect" class="ghost-btn" type="button">偵測裝置</button>
+            <button id="btn-connect" class="accent-btn" type="button">連接 iPhone</button>
+            <button id="btn-start-sync" class="accent-btn" type="button" disabled>開始同步位置</button>
+            <button id="btn-restore" class="warn-btn" type="button" disabled>恢復定位</button>
+            <button id="btn-disconnect" class="ghost-btn span-2" type="button" disabled>中斷連線</button>
+          </div>
+
+          <details class="setup-details">
+            <summary>Ubuntu 初次設定輔助（配對 / 開發者模式 / DDI）</summary>
+            <div class="setup-actions">
+              <button id="btn-pair" class="ghost-btn small" type="button">配對信任</button>
+              <button id="btn-reveal-dev" class="ghost-btn small" type="button">顯示開發者模式</button>
+              <button id="btn-mount-ddi" class="ghost-btn small" type="button">掛載 DDI</button>
+            </div>
+            <p class="hint">
+              需安裝 <code>usbmuxd</code>、使用可傳資料的 USB 線並解鎖 iPhone；不需要 Mac 或 sudo。
+            </p>
+          </details>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+  ></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
