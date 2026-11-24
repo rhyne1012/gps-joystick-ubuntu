@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
+import tempfile
 import threading
 import time
-import webbrowser
+from pathlib import Path
 
 import uvicorn
 
@@ -17,19 +19,44 @@ from .server import create_app
 def _open_ui(url: str, app_mode: bool) -> None:
     time.sleep(0.9)
     if app_mode:
+        profile_dir = Path(tempfile.gettempdir()) / "gps-joystick-ubuntu-app-profile"
+        profile_dir.mkdir(parents=True, exist_ok=True)
         for browser in ("google-chrome", "chromium", "chromium-browser", "microsoft-edge"):
             binary = shutil.which(browser)
             if binary:
                 try:
                     subprocess.Popen(
-                        [binary, f"--app={url}"],
+                        [
+                            binary,
+                            f"--app={url}",
+                            f"--user-data-dir={profile_dir}",
+                            "--no-first-run",
+                        ],
+                        stdin=subprocess.DEVNULL,
                         stdout=subprocess.DEVNULL,
                         stderr=subprocess.DEVNULL,
+                        start_new_session=True,
                     )
                     return
                 except OSError:
                     pass
-    webbrowser.open(url)
+
+    for opener in ("gio", "xdg-open"):
+        binary = shutil.which(opener)
+        if binary:
+            cmd = [binary, "open", url] if opener == "gio" else [binary, url]
+            try:
+                subprocess.Popen(
+                    cmd,
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    start_new_session=True,
+                    env=os.environ.copy(),
+                )
+                return
+            except OSError:
+                pass
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,7 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--app",
         action="store_true",
-        help="Try launching Chromium/Chrome in standalone --app window mode.",
+        help="Try launching Chromium/Chrome in an isolated --app window.",
     )
     return parser
 

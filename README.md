@@ -54,7 +54,7 @@ uv run gps-joystick-ubuntu --app
 # 僅啟動伺服器不自動開視窗
 uv run gps-joystick-ubuntu --no-browser
 
-# 或使用桌面捷徑啟動腳本（若 8765 埠已啟動則直接開啟瀏覽器頁面）
+# 或使用桌面捷徑啟動腳本（開啟獨立 GTK3/WebKit2 視窗，重複點擊會聚焦現有視窗，關閉時自動停止伺服器並恢復定位）
 ./scripts/launch-gps-joystick.sh
 ```
 

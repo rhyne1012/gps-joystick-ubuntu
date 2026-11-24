@@ -24,9 +24,9 @@ This file documents everything a future AI agent or developer needs to operate, 
    cd /home/rhyne-dynabook/.gemini/antigravity/scratch/gps-joystick-ubuntu
    uv run gps-joystick-ubuntu
    ```
-   - Pass `--app` to launch in Chrome/Chromium standalone window mode.
+   - Pass `--app` to launch in an isolated Chrome/Chromium `--app` window.
    - Pass `--no-browser` for headless/daemon startup.
-   - Or run `./scripts/launch-gps-joystick.sh` (used by the Desktop `.desktop` shortcut; if `127.0.0.1:8765` is already listening, it simply opens the UI via `xdg-open` instead of failing on port conflict).
+   - Or run `./scripts/launch-gps-joystick.sh` (used by the Desktop `.desktop` shortcut): it starts the server with `--no-browser` if needed and opens a single-instance native GTK3 + WebKit2GTK desktop window (`scripts/open-window.py`), completely avoiding Chrome. Double-clicking again focuses the existing window; closing the window stops the server it started and triggers `LocationSimulation.clear()`.
 
 2. **CLI Diagnostic & Single-Shot GPS Probe** (`probe_iphone.py`):
    ```bash
