@@ -58,11 +58,11 @@
 
   // Map setup
   const tileLayers = {
-    dark: L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-      attribution: "&copy; OpenStreetMap &copy; CARTO",
-      maxZoom: 20,
+    dark: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; OpenStreetMap contributors",
+      maxZoom: 19,
     }),
-    osm: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    osm: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: "&copy; OpenStreetMap contributors",
       maxZoom: 19,
     }),
@@ -72,13 +72,22 @@
     ),
   };
 
+  const mapEl = document.getElementById("map");
+  function syncMapTheme(layerKey) {
+    if (mapEl) {
+      mapEl.classList.toggle("map-dark-tiles", layerKey === "dark");
+    }
+  }
+
   const map = L.map("map", {
     center: DEFAULT_POS,
     zoom: 16,
     zoomControl: false,
   });
 
+  syncMapTheme("dark");
   let activeLayer = tileLayers.dark.addTo(map);
+  window.addEventListener("resize", () => map.invalidateSize());
   Object.values(tileLayers).forEach((layer) => {
     layer.on("tileerror", () => {
       els.tileWarning.classList.remove("hidden");
@@ -417,7 +426,9 @@
   });
 
   els.layerSelect.addEventListener("change", () => {
-    const next = tileLayers[els.layerSelect.value];
+    const key = els.layerSelect.value;
+    const next = tileLayers[key];
+    syncMapTheme(key);
     if (!next || next === activeLayer) return;
     map.removeLayer(activeLayer);
     activeLayer = next.addTo(map);

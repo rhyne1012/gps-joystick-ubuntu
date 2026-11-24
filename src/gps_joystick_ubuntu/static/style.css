@@ -118,9 +118,13 @@ body {
 }
 
 #map {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: #0d1311;
+}
+
+.map-dark-tiles .leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(92%) contrast(90%) saturate(75%);
 }
 
 .map-pane.picking #map {
